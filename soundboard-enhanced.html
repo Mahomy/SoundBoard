@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Soundboard</title>
+    <style>
+        body {
+            background: #f0f0f0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box; 
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(50px, 1fr));
+            gap: 10px;
+            max-width: 1200px; 
+            width: 100%; 
+            margin-top: 20px; 
+        }
+
+        .letter {
+            background: white;
+            border: 2px solid #333;
+            border-radius: 8px;
+            padding: 10px; 
+            font-size: 22px; 
+            cursor: pointer;
+            text-align: center;
+            transition: transform 0.1s, background 0.1s; 
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            word-break: break-word;
+            line-height: 1.2;
+            user-select: none; 
+            touch-action: manipulation; 
+        }
+
+        .letter:hover {
+            transform: scale(1.05); 
+            background: #e0e0e0;
+        }
+
+        .letter:active {
+            transform: scale(0.98); 
+            background: #ccc; 
+        }
+
+        .letter.playing {
+            background: #ffeb3b; 
+        }
+
+        .letter.error {
+            background: #ff0000; 
+            color: white;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px; 
+        }
+
+        .word-display {
+            background: white;
+            border: 2px solid #333;
+            border-radius: 8px;
+            padding: 15px 20px; 
+            font-size: 20px; 
+            margin: 10px 0; 
+            min-width: 300px;
+            width: 90%; 
+            max-width: 800px; 
+            text-align: center;
+            min-height: 24px; 
+            word-break: break-all;
+            overflow-wrap: break-word; 
+        }
+
+        .controls {
+            margin: 10px 0 20px; 
+            display: flex; 
+            gap: 10px; 
+            flex-wrap: wrap; 
+            justify-content: center; 
+        }
+
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.1s; 
+        }
+
+        button:hover {
+            background: #45a049;
+        }
+
+        button:active {
+            background: #388E3C;
+        }
+
+        .settings {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+            width: 90%;
+            max-width: 800px;
+        }
+
+        .voice-settings {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            width: 100%;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        select {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            min-width: 250px;
+        }
+        
+        .voice-category {
+            margin-left: 10px;
+            font-weight: bold;
+        }
+        
+        optgroup {
+            font-style: italic;
+        }
+        
+        .voice-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 10px;
+        }
+        
+        .rate-volume-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-top: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 100%;
+        }
+        
+        .slider-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .slider-container label {
+            font-size: 14px;
+        }
+        
+        input[type="range"] {
+            width: 120px;
+        }
+        
+        .pitch-display, .rate-display, .volume-display {
+            font-size: 12px;
+            color: #666;
+            min-width: 40px;
+            text-align: center;
+        }
+        
+        .favorite-voices {
+            margin-top: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            justify-content: center;
+            width: 100%;
+        }
+        
+        .favorite-voice-btn {
+            background: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 5px 10px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .favorite-voice-btn:hover {
+            background: #e0e0e0;
+        }
+        
+        .favorite-voice-btn.selected {
+            background: #4CAF50;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Soundboard</h1>
+    <div class="word-display" id="wordDisplay"></div>
+    <div class="controls">
+        <button onclick="clearWord()">Clear</button>
+        <button onclick="addSpace()">Space</button>
+        <button onclick="playWord()">Play Word</button>
+    </div>
+    <div class="settings">
+        <div class="voice-settings">
+            <label for="voiceSelect">Voice:</label>
+            <select id="voiceSelect"></select>
+        </div>
+        
+        <div class="favorite-voices" id="favoriteVoices">
+            <!-- Favorite voice buttons will be added here by JavaScript -->
+        </div>
+        
+        <div class="rate-volume-controls">
+            <div class="slider-container">
+                <label for="pitchSlider">Pitch:</label>
+                <div style="display: flex; align-items: center;">
+                    <input type="range" id="pitchSlider" min="0.5" max="2" step="0.1" value="1">
+                    <span class="pitch-display" id="pitchDisplay">1.0</span>
+                </div>
+            </div>
+            
+            <div class="slider-container">
+                <label for="rateSlider">Speed:</label>
+                <div style="display: flex; align-items: center;">
+                    <input type="range" id="rateSlider" min="0.5" max="2" step="0.1" value="1">
+                    <span class="rate-display" id="rateDisplay">1.0</span>
+                </div>
+            </div>
+            
+            <div class="slider-container">
+                <label for="volumeSlider">Volume:</label>
+                <div style="display: flex; align-items: center;">
+                    <input type="range" id="volumeSlider" min="0" max="1" step="0.1" value="1">
+                    <span class="volume-display" id="volumeDisplay">1.0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="grid" class="grid"></div>
+
+    <script>
+        const characters = [
+            'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+            'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+            '❤️', '✨', '😂', '👍',
+            '😀', '😃', '😄', '😁', '😆', '🥹', '😅', '🤣', '😂', '🙂', '🙃', '😊', '😇', '🥰', '😍', '😘', '😗', '😚', '😙', '🥲', '😋', '😛', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🥸', '🤩', '🥳', '😏', '😒', '😞', '😔', '😟', '🙁', '☹️', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😶‍🌫️', '😱', '😨', '😰', '😥', '🤔', '🤭', '🤫', '🤥', '😶', '😐', '😑', '😬', '🫠', '😴', '🤤', '🥱', '😵‍💫'
+        ];
+
+        const audioMap = {
+            '0': 'zero', '1': 'one', '2': 'two', '3': 'three', '4': 'four', '5': 'five',
+            '6': 'six', '7': 'seven', '8': 'eight', '9': 'nine',
+            '❤️': 'heart', '✨': 'sparkles', '😂': 'laughingface', '👍': 'thumbsup',
+            '😀': 'smiling_face',
+            '😭': 'crying_face',
+            '🤔': 'thinking_face',
+            '😴': 'sleeping_face',
+            '🤩': 'star_struck',
+            '😬': 'grimacing_face',
+            '🤯': 'exploding_head',
+            '🥺': 'pleading_face'
+        };
+
+        // Predefined list of recommended English voices
+        const favoriteEnglishVoices = [
+            { name: "Female Voice", data: "en-ZA': 'South African English" },
+            { name: "Female (US) - Default", data: "en-US-female-default" },
+            { name: "Male (US) - Default", data: "en-US-male-default" },
+            { name: "Female (UK)", data: "en-GB-female-default" },
+            { name: "Male (UK)", data: "en-GB-male-default" },
+            { name: "Female (Australia)", data: "en-AU-female-default" },
+            { name: "Male (Australia)", data: "en-AU-male-default" },
+            { name: "Female (India)", data: "en-IN-female-default" },
+            { name: "Male (India)", data: "en-IN-male-default" },
+            { name: "Female (Child)", data: "child-female" },
+            { name: "Robot Voice", data: "robot" },
+            
+
+
+
+        ];
+
+        const grid = document.getElementById('grid');
+        const wordDisplay = document.getElementById('wordDisplay');
+        const voiceSelect = document.getElementById('voiceSelect');
+        const favoriteVoicesContainer = document.getElementById('favoriteVoices');
+        const pitchSlider = document.getElementById('pitchSlider');
+        const rateSlider = document.getElementById('rateSlider');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const pitchDisplay = document.getElementById('pitchDisplay');
+        const rateDisplay = document.getElementById('rateDisplay');
+        const volumeDisplay = document.getElementById('volumeDisplay');
+        
+        let currentWord = '';
+        const characterAudio = {};
+        let speechSynthesis = window.speechSynthesis;
+        let voices = [];
+        let englishVoices = [];
+        let favoriteVoiceButtons = [];
+
+        // Initialize speech synthesis and populate voice options
+        function initSpeechSynthesis() {
+            if (!speechSynthesis) {
+                console.error("Speech synthesis not supported in this browser!");
+                return;
+            }
+
+            // Get available voices
+            voices = speechSynthesis.getVoices();
+            
+            // Chrome needs a callback for voices
+            if (voices.length === 0) {
+                speechSynthesis.onvoiceschanged = function() {
+                    voices = speechSynthesis.getVoices();
+                    processVoices();
+                };
+            } else {
+                processVoices();
+            }
+            
+            // Setup slider events
+            pitchSlider.addEventListener('input', updatePitchDisplay);
+            rateSlider.addEventListener('input', updateRateDisplay);
+            volumeSlider.addEventListener('input', updateVolumeDisplay);
+            
+            // Initialize displays
+            updatePitchDisplay();
+            updateRateDisplay();
+            updateVolumeDisplay();
+        }
+        
+        function updatePitchDisplay() {
+            pitchDisplay.textContent = pitchSlider.value;
+        }
+        
+        function updateRateDisplay() {
+            rateDisplay.textContent = rateSlider.value;
+        }
+        
+        function updateVolumeDisplay() {
+            volumeDisplay.textContent = volumeSlider.value;
+        }
+
+        function processVoices() {
+            // Filter for English voices
+            englishVoices = voices.filter(voice => voice.lang.startsWith('en-'));
+            populateVoiceList();
+            createFavoriteVoiceButtons();
+        }
+        
+        function createFavoriteVoiceButtons() {
+            favoriteVoicesContainer.innerHTML = '';
+            
+            // Create buttons for favorite voices
+            favoriteEnglishVoices.forEach((favoriteVoice, index) => {
+                const button = document.createElement('button');
+                button.className = 'favorite-voice-btn';
+                button.textContent = favoriteVoice.name;
+                button.dataset.index = index;
+                
+                button.addEventListener('click', () => {
+                    // Find the closest match in available voices
+                    selectVoiceByPreference(favoriteVoice);
+                    
+                    // Update UI
+                    document.querySelectorAll('.favorite-voice-btn').forEach(btn => {
+                        btn.classList.remove('selected');
+                    });
+                    button.classList.add('selected');
+                });
+                
+                favoriteVoicesContainer.appendChild(button);
+                favoriteVoiceButtons.push(button);
+            });
+            
+            // Select the first favorite voice by default
+            if (favoriteVoiceButtons.length > 0) {
+                favoriteVoiceButtons[0].click();
+            }
+        }
+        
+        function selectVoiceByPreference(preference) {
+            let bestMatch = null;
+            let bestMatchIndex = -1;
+            
+            // Logic to find the best matching voice based on preference
+            if (voices.length > 0) {
+                voices.forEach((voice, index) => {
+                    if (voice.lang.startsWith('en-')) {
+                        // Match based on language region and gender if possible
+                        const langMatch = voice.lang.includes(preference.data.split('-')[1]); // Check region (US, GB, etc)
+                        const genderMatch = (preference.data.includes('female') && 
+                                           (voice.name.toLowerCase().includes('female') || 
+                                            voice.name.toLowerCase().includes('woman') || 
+                                            voice.name.toLowerCase().includes('girl'))) ||
+                                          (preference.data.includes('male') && 
+                                           (voice.name.toLowerCase().includes('male') || 
+                                            voice.name.toLowerCase().includes('man') || 
+                                            voice.name.toLowerCase().includes('boy')));
+                        
+                        // Special cases
+                        const isChildVoice = preference.data === 'child-female' && 
+                                          (voice.name.toLowerCase().includes('girl') || 
+                                           voice.name.toLowerCase().includes('child'));
+                        
+                        const isRobotVoice = preference.data === 'robot' && 
+                                           voice.name.toLowerCase().includes('robot');
+                        
+                        // If we find an exact match or a good approximation
+                        if ((langMatch && genderMatch) || isChildVoice || isRobotVoice) {
+                            bestMatch = voice;
+                            bestMatchIndex = index;
+                            return; // Break the forEach loop
+                        } else if (langMatch && bestMatch === null) {
+                            // Second best is language match
+                            bestMatch = voice;
+                            bestMatchIndex = index;
+                        } else if (bestMatch === null) {
+                            // At minimum, pick any English voice
+                            bestMatch = voice;
+                            bestMatchIndex = index;
+                        }
+                    }
+                });
+                
+                // Set the select dropdown to the matched voice
+                if (bestMatchIndex >= 0) {
+                    voiceSelect.selectedIndex = bestMatchIndex;
+                }
+            }
+        }
+
+        function populateVoiceList() {
+            // Clear existing options
+            voiceSelect.innerHTML = '';
+            
+            // Create optgroups for different English dialects
+            const dialectGroups = {
+                'en-US': 'American English',
+                'en-GB': 'British English',
+                'en-AU': 'Australian English',
+                'en-CA': 'Canadian English',
+                'en-IN': 'Indian English',
+                'en-IE': 'Irish English',
+                'en-ZA': 'South African English',
+                'en-NZ': 'New Zealand English',
+                'en-': 'Other English'
+            };
+            
+            const optgroups = {};
+            
+            // Create optgroup elements
+            for (const [code, label] of Object.entries(dialectGroups)) {
+                const group = document.createElement('optgroup');
+                group.label = label;
+                optgroups[code] = group;
+                voiceSelect.appendChild(group);
+            }
+            
+            // Add voices to appropriate optgroups
+            voices.forEach((voice, index) => {
+                if (voice.lang.startsWith('en-')) {
+                    const option = document.createElement('option');
+                    option.textContent = `${voice.name} (${voice.lang})`;
+                    option.value = index;
+                    
+                    // Find the appropriate group
+                    let groupFound = false;
+                    for (const code of Object.keys(dialectGroups)) {
+                        if (voice.lang.startsWith(code) && code !== 'en-') {
+                            optgroups[code].appendChild(option);
+                            groupFound = true;
+                            break;
+                        }
+                    }
+                    
+                    // If no specific group was found, add to "Other English"
+                    if (!groupFound) {
+                        optgroups['en-'].appendChild(option);
+                    }
+                }
+            });
+            
+            // Add non-English voices at the end if desired
+            const otherGroup = document.createElement('optgroup');
+            otherGroup.label = 'Non-English (Hidden)';
+            otherGroup.style.display = 'none'; // Hide non-English voices
+            voiceSelect.appendChild(otherGroup);
+            
+            voices.forEach((voice, index) => {
+                if (!voice.lang.startsWith('en-')) {
+                    const option = document.createElement('option');
+                    option.textContent = `${voice.name} (${voice.lang})`;
+                    option.value = index;
+                    otherGroup.appendChild(option);
+                }
+            });
+            
+            // Select a default voice
+            if (englishVoices.length > 0) {
+                // Try to find a US female voice first
+                const usFemaleIndex = voices.findIndex(voice => 
+                    voice.lang.startsWith('en-US') && 
+                    (voice.name.toLowerCase().includes('female') || 
+                     voice.name.toLowerCase().includes('woman') || 
+                     voice.name.toLowerCase().includes('girl'))
+                );
+                
+                if (usFemaleIndex >= 0) {
+                    voiceSelect.value = usFemaleIndex;
+                } else {
+                    // Otherwise just pick the first English voice
+                    const firstEnglishIndex = voices.findIndex(voice => voice.lang.startsWith('en-'));
+                    if (firstEnglishIndex >= 0) {
+                        voiceSelect.value = firstEnglishIndex;
+                    }
+                }
+            }
+        }
+
+        function clearWord() {
+            currentWord = '';
+            wordDisplay.textContent = '';
+        }
+
+        function addSpace() {
+            currentWord += ' ';
+            wordDisplay.textContent = currentWord;
+        }
+
+        window.clearWord = clearWord;
+        window.playWord = playWord;
+        window.addSpace = addSpace;
+
+        function playWord() {
+            if (currentWord.length === 0 || !speechSynthesis) {
+                return;
+            }
+
+            try {
+                const originalWordDisplay = wordDisplay.textContent;
+                wordDisplay.textContent = 'Speaking...';
+
+                // Cancel any ongoing speech
+                if (speechSynthesis.speaking) {
+                    speechSynthesis.cancel();
+                }
+
+                const utterance = new SpeechSynthesisUtterance(currentWord);
+                
+                // Set selected voice
+                if (voiceSelect.selectedIndex >= 0 && voices.length > 0) {
+                    utterance.voice = voices[voiceSelect.value];
+                }
+                
+                // Apply pitch, rate, and volume settings
+                utterance.pitch = parseFloat(pitchSlider.value);
+                utterance.rate = parseFloat(rateSlider.value);
+                utterance.volume = parseFloat(volumeSlider.value);
+
+                // Events
+                utterance.onend = () => {
+                    wordDisplay.textContent = originalWordDisplay;
+                };
+
+                utterance.onerror = (e) => {
+                    console.error("Speech synthesis error:", e);
+                    wordDisplay.textContent = "Error speaking word.";
+                    setTimeout(() => wordDisplay.textContent = originalWordDisplay, 2000);
+                };
+
+                speechSynthesis.speak(utterance);
+            } catch (error) {
+                console.error("Error during text to speech:", error);
+                wordDisplay.textContent = "Error generating speech.";
+                setTimeout(() => wordDisplay.textContent = currentWord, 2000);
+            }
+        }
+
+        function playLetterSound(character) {
+            if ('speechSynthesis' in window) {
+                // Cancel any ongoing speech
+                if (speechSynthesis.speaking) {
+                    speechSynthesis.cancel();
+                }
+                
+                // Create a short utterance for the letter
+                const utterance = new SpeechSynthesisUtterance(character);
+                
+                // Apply current voice settings
+                if (voiceSelect.selectedIndex >= 0 && voices.length > 0) {
+                    utterance.voice = voices[voiceSelect.value];
+                }
+                
+                // Apply pitch, rate, and volume settings
+                utterance.pitch = parseFloat(pitchSlider.value);
+                utterance.rate = parseFloat(rateSlider.value);
+                utterance.volume = parseFloat(volumeSlider.value);
+                
+                speechSynthesis.speak(utterance);
+            }
+        }
+
+        function createButtons() {
+            for (const character of characters) {
+                const button = document.createElement('div');
+                button.className = 'letter';
+                button.textContent = character;
+                button.dataset.character = character;
+
+                button.addEventListener('click', () => {
+                    const clickedCharacter = button.dataset.character;
+                    
+                    // Play the sound for this character
+                    playLetterSound(clickedCharacter);
+
+                    button.classList.add('playing');
+                    setTimeout(() => {
+                        button.classList.remove('playing');
+                    }, 200); 
+
+                    currentWord += clickedCharacter;
+                    wordDisplay.textContent = currentWord;
+
+                    wordDisplay.scrollLeft = wordDisplay.scrollWidth;
+                });
+
+                grid.appendChild(button);
+            }
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            initSpeechSynthesis();
+            createButtons();
+        });
+    </script>
+</body>
+</html>
